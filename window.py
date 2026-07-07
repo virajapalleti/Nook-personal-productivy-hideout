@@ -13,40 +13,121 @@ FONT = "Helvetica"
 
 # ── Colour presets — edit these yourself ────────────────────────────
 BG_PRESETS = [
+    # darks
     ("#0a0a0a", "Black"),
-    ("#8d99ae", "Light Grey"),
+    ("#121212", "Charcoal"),
+    ("#1e1e1e", "Graphite"),
+    ("#2b2d42", "Slate"),
     ("#0d1b2a", "Navy"),
     ("#003049", "Navy02"),
-    ("#f7cad0", "Light Pink"),
-    ("#8364e8", "Purple"),
-    ("#a3b18a", "Sage Green"),
-    ("#3a5a40", "Dark Green"),
-    ("#caf0f8", "Light Blue"),
+    ("#16213e", "Deep Ocean"),
+    ("#1a1a2e", "Midnight"),
+    ("#231942", "Indigo Night"),
+    ("#3c1642", "Grape"),
     ("#1f0021", "Deep Wine"),
+    ("#2d132c", "Dark Plum"),
+    ("#3d0000", "Maroon"),
+    ("#402218", "Espresso"),
+    ("#1b3022", "Forest"),
+    ("#0f3d3e", "Pine"),
+    ("#264653", "Teal Night"),
+    ("#3a5a40", "Dark Green"),
+    ("#8364e8", "Purple"),
+    ("#8d99ae", "Light Grey"),
+    # lights
+    ("#a3b18a", "Sage Green"),
+    ("#d8e2dc", "Sage Mist"),
+    ("#dbe7e4", "Mist"),
+    ("#e2ece9", "Seafoam"),
+    ("#caf0f8", "Light Blue"),
+    ("#cddafd", "Periwinkle"),
+    ("#e6e6fa", "Lavender"),
+    ("#ffe5ec", "Blush"),
+    ("#f7cad0", "Light Pink"),
+    ("#fff1e6", "Peach"),
+    ("#f4e1d2", "Sand"),
+    ("#faf3dd", "Vanilla"),
+    ("#fdf6e3", "Cream"),
+    ("#e8e8e4", "Fog"),
     ("#f0f0f0", "White"),
 ]
 
+def theme_for(bg):
+    """Derive readable text/border colours from the background so light
+    presets (White, Light Pink, ...) don't render invisible dark-theme text."""
+    c = QColor(bg)
+    luma = 0.299 * c.red() + 0.587 * c.green() + 0.114 * c.blue()
+    if luma > 150:  # light background
+        return {
+            "text": "#1a1a1a",        # main task text
+            "done": "#9a9a9a",        # completed task text
+            "border": "#b9b9b9",      # header / divider borders
+            "input_border": "#ababab",
+            "placeholder": "#8a8a8a",
+            "dim": "#7a7a7a",         # secondary buttons (x, clear, gear)
+            "hover_bg": "rgba(0, 0, 0, 0.07)",
+            "header_bg": "rgba(0, 0, 0, 0.04)",   # subtle fill behind category headers
+            "row_hover": "rgba(0, 0, 0, 0.05)",   # task row hover highlight
+            "scroll": "rgba(0, 0, 0, 0.18)",      # scrollbar handle
+        }
+    return {  # dark background — original palette
+        "text": "#cccccc",
+        "done": "#505050",
+        "border": "#2a2a2a",
+        "input_border": "#2f2f2f",
+        "placeholder": "#444444",
+        "dim": "#555555",
+        "hover_bg": "#1a1a1a",
+        "header_bg": "rgba(255, 255, 255, 0.03)",
+        "row_hover": "rgba(255, 255, 255, 0.04)",
+        "scroll": "rgba(255, 255, 255, 0.14)",
+    }
+
+
 ACCENT_PRESETS = [
-    ("#34073d", "Deep purple"),
-    ("#0e1c26", "Black"),
+    # warm
+    ("#ff6b6b", "Red"),
+    ("#f28482", "Salmon"),
+    ("#e76f51", "Coral"),
+    ("#f4a261", "Tangerine"),
+    ("#ff9e00", "Amber"),
+    ("#ffd166", "Sunflower"),
+    ("#f0c040", "Gold"),
+    ("#e9c46a", "Honey"),
+    ("#dda15e", "Ochre"),
+    ("#d4a373", "Caramel"),
+    ("#e7bc91", "Light Brown"),
+    ("#f5cac3", "Rose"),
+    # cool
+    ("#4ec9b0", "Mint"),
+    ("#06d6a0", "Emerald"),
+    ("#2a9d8f", "Teal"),
+    ("#80ffdb", "Aqua"),
+    ("#84a59d", "Eucalyptus"),
     ("#b7e4c7", "Light Green"),
+    ("#90e0ef", "Ice Blue"),
+    ("#7ec8e3", "Sky"),
+    ("#118ab2", "Cerulean"),
+    # purples & pinks
+    ("#a78bfa", "Violet"),
+    ("#c77dff", "Orchid"),
+    ("#b5179e", "Fuchsia"),
+    ("#f72585", "Magenta"),
+    ("#34073d", "Deep purple"),
+    # neutrals
+    ("#0e1c26", "Black"),
     ("#d9dace", "Pale White"),
     ("#ffffff", "White"),
-    ("#ff6b6b", "Red"),
-    ("#e7bc91", "Light Brown"),
-    ("#f0c040", "Gold"),
-    ("#7ec8e3", "Sky"),
-    ("#a78bfa", "Violet"),
 ]
 # ────────────────────────────────────────────────────────────────────
 
 
 # ── Custom painted gear button (no emoji) ───────────────────────────
 class GearButton(QPushButton):
-    def __init__(self, accent="#555"):
+    def __init__(self, accent="#555", base="#555"):
         super().__init__()
         self.setFixedSize(26, 26)
-        self._base  = "#555"
+        self._base  = base
         self._hover = accent
         self._hovering = False
         self.setStyleSheet("background: transparent; border: none;")
@@ -89,13 +170,20 @@ class GearButton(QPushButton):
 
 # ── Task item ────────────────────────────────────────────────────────
 class TaskItem(QWidget):
-    def __init__(self, task, accent, on_change, on_delete, edit_mode=False):
+    def __init__(self, task, accent, theme, on_change, on_delete, edit_mode=False):
         super().__init__()
         self.task      = task
         self.accent    = accent
+        self.theme     = theme
         self.on_change = on_change
         self.on_delete = on_delete
         self.edit_mode = edit_mode
+        # soft rounded hover highlight on the whole row
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self.setStyleSheet(f"""
+            TaskItem {{ background: transparent; border-radius: 5px; }}
+            TaskItem:hover {{ background: {theme["row_hover"]}; }}
+        """)
         self.build()
 
     def build(self):
@@ -119,9 +207,9 @@ class TaskItem(QWidget):
             del_btn = QPushButton("x")
             del_btn.setFixedSize(20, 20)
             del_btn.clicked.connect(self.on_delete)
-            del_btn.setStyleSheet("""
-                QPushButton { color: #555; background: transparent; border: none; font-size: 12px; }
-                QPushButton:hover { color: #ff5555; }
+            del_btn.setStyleSheet(f"""
+                QPushButton {{ color: {self.theme["dim"]}; background: transparent; border: none; font-size: 12px; }}
+                QPushButton:hover {{ color: #ff5555; }}
             """)
             layout.addWidget(del_btn)
 
@@ -129,7 +217,7 @@ class TaskItem(QWidget):
 
     def apply_style(self):
         done       = self.task["done"]
-        text_color = "#505050" if done else "#cccccc"
+        text_color = self.theme["done"] if done else self.theme["text"]
         strike     = "line-through" if done else "none"
         self.label.setStyleSheet(f"""
             QLineEdit {{
@@ -139,6 +227,8 @@ class TaskItem(QWidget):
                 border: none;
                 font-family: {FONT};
                 font-size: 12px;
+                selection-background-color: {self.accent};
+                selection-color: #ffffff;
             }}
         """)
         self.cb.setStyleSheet(f"""
@@ -146,10 +236,11 @@ class TaskItem(QWidget):
             QCheckBox::indicator {{
                 width: 13px; height: 13px;
                 border: 1px solid {self.accent};
-                border-radius: 3px;
+                border-radius: 4px;
                 background: transparent;
             }}
-            QCheckBox::indicator:checked {{ background: {self.accent}; }}
+            QCheckBox::indicator:hover {{ border: 1.5px solid {self.accent}; }}
+            QCheckBox::indicator:checked {{ background: {self.accent}; border: 1px solid {self.accent}; }}
         """)
 
     def toggle_done(self):
@@ -172,11 +263,12 @@ class TaskItem(QWidget):
 
 # ── Category widget ──────────────────────────────────────────────────
 class CategoryWidget(QWidget):
-    def __init__(self, cat, accent, on_change, on_delete_self,
+    def __init__(self, cat, accent, theme, on_change, on_delete_self,
                  edit_mode=False, expanded=False, two_col=False):
         super().__init__()
         self.cat           = cat
         self.accent        = accent
+        self.theme         = theme
         self.on_change     = on_change
         self.on_delete_self = on_delete_self
         self.edit_mode     = edit_mode
@@ -203,9 +295,9 @@ class CategoryWidget(QWidget):
             del_btn = QPushButton("x")
             del_btn.setFixedSize(24, 24)
             del_btn.clicked.connect(self.on_delete_self)
-            del_btn.setStyleSheet("""
-                QPushButton { color: #555; background: transparent; border: none; font-size: 13px; }
-                QPushButton:hover { color: #ff5555; }
+            del_btn.setStyleSheet(f"""
+                QPushButton {{ color: {self.theme["dim"]}; background: transparent; border: none; font-size: 13px; }}
+                QPushButton:hover {{ color: #ff5555; }}
             """)
             header_row.addWidget(del_btn)
 
@@ -222,18 +314,19 @@ class CategoryWidget(QWidget):
         # thin left-accent border, no bold
         self.header_btn.setStyleSheet(f"""
             QPushButton {{
-                background: transparent;
+                background: {self.theme["header_bg"]};
                 color: {self.accent};
-                border: 1px solid #2a2a2a;
+                border: 1px solid {self.theme["border"]};
                 border-left: 2px solid {self.accent};
-                border-radius: 4px;
+                border-radius: 6px;
                 padding: 5px 8px;
                 text-align: left;
                 font-family: {FONT};
                 font-size: 13px;
                 font-weight: normal;
             }}
-            QPushButton:hover {{ background: #1a1a1a; }}
+            QPushButton:hover {{ background: {self.theme["hover_bg"]}; }}
+            QPushButton:pressed {{ background: {self.theme["header_bg"]}; }}
         """)
 
     def update_count(self):
@@ -271,7 +364,7 @@ class CategoryWidget(QWidget):
             grid.setSpacing(2)
             for i, task in enumerate(tasks):
                 w = TaskItem(
-                    task, self.accent,
+                    task, self.accent, self.theme,
                     lambda: self.on_change(),
                     lambda checked=False, t=task: self.delete_task(t),
                     self.edit_mode
@@ -284,7 +377,7 @@ class CategoryWidget(QWidget):
         else:
             for task in tasks:
                 w = TaskItem(
-                    task, self.accent,
+                    task, self.accent, self.theme,
                     lambda: self.on_change(),
                     lambda checked=False, t=task: self.delete_task(t),
                     self.edit_mode
@@ -297,16 +390,19 @@ class CategoryWidget(QWidget):
         self.task_input.setStyleSheet(f"""
             QLineEdit {{
                 background: transparent;
-                color: #cccccc;
+                color: {self.theme["text"]};
                 border: none;
-                border-bottom: 1px solid #2f2f2f;
+                border-bottom: 1px solid {self.theme["input_border"]};
                 padding: 4px 2px;
                 font-family: {FONT};
                 font-size: 12px;
+                selection-background-color: {self.accent};
+                selection-color: #ffffff;
             }}
+            QLineEdit:focus {{ border-bottom: 1px solid {self.accent}; }}
         """)
         _p = self.task_input.palette()
-        _p.setColor(_p.ColorRole.PlaceholderText, QColor("#444444"))
+        _p.setColor(_p.ColorRole.PlaceholderText, QColor(self.theme["placeholder"]))
         self.task_input.setPalette(_p)
 
 
@@ -316,7 +412,7 @@ class CategoryWidget(QWidget):
         clear_btn = QPushButton("clear completed")
         clear_btn.setStyleSheet(f"""
             QPushButton {{
-                color: #444;
+                color: {self.theme["dim"]};
                 background: transparent;
                 border: none;
                 font-size: 11px;
@@ -368,7 +464,7 @@ class SettingsDialog(QDialog):
             QDialog {
                 background: #1a1a1a;
                 border: 1px solid #2e2e2e;
-                border-radius: 8px;
+                border-radius: 10px;
             }
             QLabel {
                 color: #555;
@@ -379,8 +475,10 @@ class SettingsDialog(QDialog):
         """)
         self.build()
 
+    PER_ROW = 10  # swatches per grid row
+
     def _swatch_row(self, label_text, presets, current, on_pick):
-        """Labelled row of clickable colour swatches."""
+        """Labelled grid of clickable colour swatches (wraps every PER_ROW)."""
         wrapper = QWidget()
         wrapper.setStyleSheet("background: transparent;")
         vl = QVBoxLayout(wrapper)
@@ -388,11 +486,11 @@ class SettingsDialog(QDialog):
         vl.setSpacing(5)
         vl.addWidget(QLabel(label_text))
 
-        row = QHBoxLayout()
+        row = QGridLayout()
         row.setSpacing(5)
         row.setContentsMargins(0, 0, 0, 0)
 
-        for hex_val, name in presets:
+        for i, (hex_val, name) in enumerate(presets):
             btn = QPushButton()
             btn.setFixedSize(22, 22)
             btn.setToolTip(name)
@@ -402,14 +500,14 @@ class SettingsDialog(QDialog):
                 QPushButton {{
                     background: {hex_val};
                     border: {border};
-                    border-radius: 3px;
+                    border-radius: 6px;
                 }}
-                QPushButton:hover {{ border: 2px solid #888; }}
+                QPushButton:hover {{ border: 2px solid #aaaaaa; }}
             """)
             btn.clicked.connect(lambda checked=False, h=hex_val, fn=on_pick: (fn(h), self.close()))
-            row.addWidget(btn)
+            row.addWidget(btn, i // self.PER_ROW, i % self.PER_ROW)
 
-        row.addStretch()
+        row.setColumnStretch(self.PER_ROW, 1)
         vl.addLayout(row)
         return wrapper
 
@@ -431,6 +529,7 @@ class NookWindow(QWidget):
         self.data        = datastore.load()
         self.accent      = self.data.get("accent", "#4EC9B0")
         self.bg          = self.data.get("bg", "#1e1e1e")
+        self.theme       = theme_for(self.bg)
         self.edit_mode   = False
         self._drag_pos   = None
         self._at_max_height = False
@@ -470,7 +569,7 @@ class NookWindow(QWidget):
             QWidget#nook_root {{
                 background: {self.bg};
                 border-radius: 10px;
-                border: 1px solid #2a2a2a;
+                border: 1px solid {self.theme["border"]};
             }}
         """)
 
@@ -488,17 +587,20 @@ class NookWindow(QWidget):
         self.cat_input.setStyleSheet(f"""
             QLineEdit {{
                 background: transparent;
-                color: #cccccc;
+                color: {self.theme["text"]};
                 border: none;
-                border-bottom: 1px solid #2a2a2a;
+                border-bottom: 1px solid {self.theme["border"]};
                 padding: 4px 2px;
                 font-family: {FONT};
                 font-size: 12px;
+                selection-background-color: {self.accent};
+                selection-color: #ffffff;
             }}
+            QLineEdit:focus {{ border-bottom: 1px solid {self.accent}; }}
         """)
         _p = self.cat_input.palette()
-        _p.setColor(_p.ColorRole.PlaceholderText, QColor("#444444"))
-        self.cat_input.setPalette(_p)   
+        _p.setColor(_p.ColorRole.PlaceholderText, QColor(self.theme["placeholder"]))
+        self.cat_input.setPalette(_p)
 
         self.cat_input.returnPressed.connect(self.add_category)
         top_bar.addWidget(self.cat_input)
@@ -510,7 +612,7 @@ class NookWindow(QWidget):
         edit_btn.clicked.connect(self.toggle_edit_mode)
         edit_btn.setStyleSheet(f"""
             QPushButton {{
-                color: {'#ff6b6b' if self.edit_mode else '#555'};
+                color: {'#ff6b6b' if self.edit_mode else self.theme["dim"]};
                 background: transparent;
                 border: none;
                 font-size: 14px;
@@ -521,7 +623,7 @@ class NookWindow(QWidget):
         top_bar.addWidget(edit_btn)
 
         # clean painted gear — not an emoji
-        self.gear_btn = GearButton(accent=self.accent)
+        self.gear_btn = GearButton(accent=self.accent, base=self.theme["dim"])
         self.gear_btn.clicked.connect(self.open_settings)
         top_bar.addWidget(self.gear_btn)
 
@@ -529,13 +631,29 @@ class NookWindow(QWidget):
 
         line = QWidget()
         line.setFixedHeight(1)
-        line.setStyleSheet("background: #2a2a2a;")
+        line.setStyleSheet(f"background: {self.theme['border']};")
         self.main_layout.addWidget(line)
 
         self.scroll = QScrollArea()
         self.scroll.setWidgetResizable(True)
         self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.scroll.setStyleSheet("QScrollArea { border: none; background: transparent; }")
+        # slim, rounded, themed scrollbar instead of the chunky OS default
+        self.scroll.setStyleSheet(f"""
+            QScrollArea {{ border: none; background: transparent; }}
+            QScrollBar:vertical {{
+                background: transparent;
+                width: 6px;
+                margin: 2px 0px;
+            }}
+            QScrollBar::handle:vertical {{
+                background: {self.theme["scroll"]};
+                border-radius: 3px;
+                min-height: 30px;
+            }}
+            QScrollBar::handle:vertical:hover {{ background: {self.accent}; }}
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0px; }}
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{ background: transparent; }}
+        """)
 
         self.cat_container = QWidget()
         self.cat_container.setStyleSheet("background: transparent;")
@@ -570,6 +688,7 @@ class NookWindow(QWidget):
             w = CategoryWidget(
                 cat=cat,
                 accent=self.accent,
+                theme=self.theme,
                 on_change=self.on_category_change,
                 on_delete_self=self._make_delete_fn(cat),
                 edit_mode=self.edit_mode,
@@ -613,6 +732,11 @@ class NookWindow(QWidget):
         name = self.cat_input.text().strip()
         if not name:
             return
+        # expanded state is keyed by category name, so duplicates would
+        # collide — reject a name that already exists
+        if any(c["name"].lower() == name.lower() for c in self.data["categories"]):
+            self.cat_input.selectAll()
+            return
         self.data["categories"].append({"name": name, "tasks": []})
         self.cat_input.clear()
         self.save_and_render()
@@ -641,6 +765,7 @@ class NookWindow(QWidget):
 
     def set_bg(self, color):
         self.bg = color
+        self.theme = theme_for(color)
         self.data["bg"] = color
         datastore.save(self.data)
         self.apply_bg()
